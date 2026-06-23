@@ -12,7 +12,7 @@ Visualize performance — auto-generated charts showing score distributions, rou
 Why I built this
 As a robotics coach and STEAM educator with a background in data analytics, I wanted a tool that combines both — something that treats competition data (scores, rule changes, judging criteria) with the same rigor as any other dataset, while staying genuinely useful for the day-to-day work of coaching. RoboInsights is built on real competition formats and sample data modeled after WRO and RoboFest events.
 
-Tech stack
+Tech stack:
 -Vanilla HTML, CSS, and JavaScript (no framework dependencies)
 -Chart.js for data visualization
 -Designed to plug into an LLM backend (e.g., Claude or Gemini API) for source-grounded Q&A
