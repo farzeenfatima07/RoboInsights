@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoboInsights — Robotics Coach Research Notebook</title>
+    <!-- Chart.js via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-deep: #070b19;
+            --bg-card: #0f162e;
+            --bg-card-hover: #172246;
+            --border-color: #1f2d5a;
+            --neon-blue: #00d2ff;
+            --neon-teal: #00f5d4;
+            --text-main: #f1f5f9;
+            --text-muted: #64748b;
+            --user-msg: #1e293b;
+            --ai-msg: #0b1124;
+            --pulse-color: rgba(0, 245, 212, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .mono {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        }
+
+        /* App Header */
+        header {
+            background-color: var(--bg-card);
+            border-bottom: 2px solid var(--border-color);
+            padding: 0.85rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+            z-index: 10;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            font-size: 1.8rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        header h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-teal));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-badge {
+            background: rgba(0, 245, 212, 0.08);
+            border: 1px solid var(--neon-teal);
+            color: var(--neon-teal);
+            padding: 0.3rem 0.85rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 0 12px rgba(0, 245, 212, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--neon-teal);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px var(--neon-teal);
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.85); opacity: 0.5; }
+            100% { transform: scale(1.15); opacity: 1; }
+        }
+
+        /* Dashboard Core Layout */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 310px 1fr 410px;
+            flex: 1;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 50%, #0c1229 0%, var(--bg-deep) 100%);
+        }
+
+        /* Common Panel Structure */
+        .panel {
+            background-color: transparent;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 1.1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1.25px;
+            color: #8fa0dd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(15, 22, 46, 0.4);
+        }
+
+        .panel-content {
+            padding: 1.25rem;
+            overflow-y: auto;
+            flex: 1;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+        }
+
+        /* --- LEFT PANEL: Strategy Sources --- */
+        #sources-panel {
+            background-color: rgba(10, 16, 38, 0.7);
+        }
+
+        .file-upload-btn {
+            background: linear-gradient(135deg, rgba(0, 210, 255, 0.08), rgba(0, 245, 212, 0.08));
+            border: 1.5px dashed var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 0.85rem;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            transition: all 0.25s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .file-upload-btn:hover {
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.35);
+            background: linear-gradient(135deg, rgba(0, 210, 255, 0.15), rgba(0, 245, 212, 0.15));
+            border-color: #54e2ff;
+            transform: translateY(-1px);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .empty-state {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 3rem 1.25rem;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            border: 1px dashed rgba(31, 45, 90, 0.6);
+            border-radius: 8px;
+            background: rgba(15, 22, 46, 0.25);
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .empty-state p {
+            margin-top: 0.5rem;
+            font-size: 0.78rem;
+        }
+
+        .source-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.9rem;
+            margin-bottom: 0.85rem;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 0.85rem;
+            align-items: center;
+            transition: all 0.25s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .source-card:hover {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.12);
+            transform: translateX(2px);
+        }
+
+        .source-card.highlighted {
+            border-color: var(--neon-teal);
+            box-shadow: 0 0 20px rgba(0, 245, 212, 0.6);
+            background-color: var(--bg-card-hover);
+            transform: scale(1.02);
+            transition: all 0.15s ease-in-out;
+        }
+
+        .source-icon {
+            font-size: 1.35rem;
+            width: 38px;
+            height: 38px;
+            background: rgba(0, 210, 255, 0.08);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(0, 210, 255, 0.2);
+        }
+
+        .source-icon.csv {
+            background: rgba(0, 245, 212, 0.08);
+            border-color: rgba(0, 245, 212, 0.2);
+        }
+
+        .source-info {
+            min-width: 0;
+        }
+
+        .source-info h4 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.15rem;
+        }
+
+        .source-info p {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .source-card input[type="checkbox"] {
+            accent-color: var(--neon-teal);
+            width: 17px;
+            height: 17px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        /* --- CENTER PANEL: Document Viewer --- */
+        #document-panel {
+            background-color: rgba(7, 11, 25, 0.1);
+        }
+
+        /* PDF Reader View Container */
+        .pdf-viewer-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: #080d22;
+        }
+
+        .pdf-viewer-header {
+            padding: 0.9rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 22, 46, 0.6);
+        }
+
+        .pdf-viewport {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            background: #090e25;
+            line-height: 1.7;
+            font-size: 0.92rem;
+            color: #cbd5e1;
+            scrollbar-width: thin;
+        }
+
+        .pdf-page-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 2.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            min-height: 450px;
+        }
+
+        .pdf-highlight {
+            background-color: rgba(234, 179, 8, 0.2);
+            border-bottom: 2px dashed #eab308;
+            color: #fef08a;
+            padding: 2px 4px;
+            border-radius: 2px;
+            animation: highlightGlow 2.5s infinite alternate;
+        }
+
+        @keyframes highlightGlow {
+            from { background-color: rgba(234, 179, 8, 0.15); box-shadow: 0 0 5px rgba(234, 179, 8, 0.1); }
+            to { background-color: rgba(234, 179, 8, 0.3); box-shadow: 0 0 15px rgba(234, 179, 8, 0.4); }
+        }
+
+        /* --- RIGHT PANEL: Grounded Chat + Reports + Charts Tabbed Engine --- */
+        #insights-panel {
+            border-right: none;
+            background-color: rgba(10, 16, 38, 0.6);
+        }
+
+        .tabs-header {
+            display: flex;
+            background: var(--bg-card);
+            border-bottom: 1.5px solid var(--border-color);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 1.1rem 0.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            border-bottom: 3px solid transparent;
+            text-align: center;
+        }
+
+        .tab-btn.active {
+            color: var(--neon-teal);
+            border-bottom-color: var(--neon-teal);
+            background: rgba(0, 245, 212, 0.03);
+            text-shadow: 0 0 8px rgba(0, 245, 212, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 1.25rem;
+            overflow-y: auto;
+            flex: 1;
+            scrollbar-width: thin;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Flex Layout Override for Chat Tab specifically to retain dynamic sizing */
+        #tab-chat.active {
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .messages-display {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.15rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 0.9rem 1.2rem;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .message.user {
+            background-color: var(--user-msg);
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+        }
+
+        .message.ai {
+            background-color: var(--ai-msg);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Citation Pill */
+        .citation {
+            background: rgba(0, 210, 255, 0.12);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            color: var(--neon-blue);
+            border-radius: 4px;
+            padding: 0.1rem 0.5rem;
+            font-size: 0.72rem;
+            cursor: pointer;
+            display: inline-block;
+            margin-left: 0.35rem;
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+
+        .citation:hover {
+            background: var(--neon-blue);
+            color: var(--bg-deep);
+            box-shadow: 0 0 10px var(--neon-blue);
+            border-color: var(--neon-blue);
+        }
+
+        /* Suggested Queries Row */
+        .chips-container {
+            padding: 0.65rem 1rem;
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            white-space: nowrap;
+            background: rgba(9, 14, 33, 0.8);
+            border-top: 1px solid var(--border-color);
+            scrollbar-width: none;
+        }
+
+        .chips-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .chip-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: #bcc3d4;
+            padding: 0.4rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .chip-btn:hover {
+            border-color: var(--neon-teal);
+            color: var(--neon-teal);
+            background: rgba(0, 245, 212, 0.05);
+            transform: translateY(-1px);
+        }
+
+        /* Form Chat Input */
+        .chat-input-area {
+            padding: 1.1rem 1rem;
+            background: var(--bg-card);
+            border-top: 1.5px solid var(--border-color);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            background: var(--bg-deep);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .chat-input-area input:focus {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.25);
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, var(--neon-blue), #0099ff);
+            color: var(--bg-deep);
+            border: none;
+            padding: 0 1.2rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.82rem;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-btn:hover {
+            box-shadow: 0 0 15px var(--neon-blue);
+            transform: translateY(-1px);
+        }
+
+        /* Brief Reports Content */
+        .brief-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin-bottom: 1.1rem;
+            transition: all 0.25s ease;
+        }
+
+        .brief-card:hover {
+            border-color: rgba(0, 245, 212, 0.3);
+        }
+
+        .brief-card h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brief-badge {
+            font-size: 0.65rem;
+            background: rgba(0, 210, 255, 0.08);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .brief-card p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.45;
+            margin-bottom: 1rem;
+        }
+
+        .generate-btn {
+            background: transparent;
+            border: 1px solid var(--neon-teal);
+            color: var(--neon-teal);
+            padding: 0.55rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .generate-btn:hover {
+            background: var(--neon-teal);
+            color: var(--bg-deep);
+            box-shadow: 0 0 12px rgba(0, 245, 212, 0.35);
+        }
+
+        .generated-report {
+            background: rgba(7, 11, 25, 0.7);
+            border-left: 3px solid var(--neon-teal);
+            padding: 0.85rem;
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            border-radius: 0 6px 6px 0;
+            display: none;
+            white-space: pre-line;
+            line-height: 1.5;
+            border-top: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Telemetry Analytics */
+        .chart-wrapper {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .chart-wrapper h4 {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chart-wrapper h4::before {
+            content: "📈";
+        }
+
+        /* Custom Toast notification system instead of alert() */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background-color: var(--bg-card);
+            border: 1px solid var(--neon-blue);
+            color: var(--text-main);
+            padding: 0.85rem 1.25rem;
+            border-radius: 6px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                overflow-y: auto;
+                height: auto;
+            }
+            body {
+                overflow-y: auto;
+                height: auto;
+            }
+            .panel {
+                height: 520px;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="logo-container">
+            <div class="logo-icon">🤖</div>
+            <div>
+                <h1>RoboInsights</h1>
+            </div>
+        </div>
+        <div class="header-meta">
+            <div class="status-badge">
+                <span class="status-dot"></span>
+                AI Core Grounded
+            </div>
+        </div>
+    </header>
+
+    <!-- Dashboard Core Grid -->
+    <div class="dashboard">
+        
+        <!-- LEFT PANEL: Sources -->
+        <div class="panel" id="sources-panel">
+            <div class="panel-header">
+                <span>Strategy Sources</span>
+                <span class="mono" id="source-count" style="color: var(--neon-blue); font-size: 0.75rem;">0 Loaded</span>
+            </div>
+            <div class="panel-content">
+                <label class="file-upload-btn" for="file-input">
+                    📂 Add Source Document
+                </label>
+                <input type="file" id="file-input" accept=".pdf,.csv" multiple>
+                
+                <div id="sources-list-container">
+                    <div class="empty-state" id="empty-sources-msg">
+                        <strong>No documents uploaded yet.</strong>
+                        <p>Upload game manuals (PDF) or match scoring metrics (CSV) to ground your research workspace.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER PANEL: Permanent Document Viewer -->
+        <div class="panel" id="document-panel">
+            <div class="panel-header">
+                <span>📖 Document Viewer</span>
+            </div>
+            
+            <!-- PDF Document Reader Section -->
+            <div class="pdf-viewer-container" id="pdf-container-view">
+                <div class="pdf-viewer-header">
+                    <div style="display: flex; align-items: center; gap: 0.65rem;">
+                        <span style="font-size: 1.35rem; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; background: rgba(0, 210, 255, 0.1); border-radius: 6px;" id="pdf-header-icon">📄</span>
+                        <div>
+                            <h4 id="pdf-viewer-title" style="font-size: 0.85rem; font-weight: 700; color: #fff;">No Document Loaded</h4>
+                            <p id="pdf-viewer-meta" style="font-size: 0.72rem; color: var(--text-muted);">Ground-truth analysis offline</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button class="chip-btn" onclick="navigatePDFPage(-1)" style="padding: 0.3rem 0.65rem; font-weight: bold;">◀ Prev</button>
+                        <span class="mono" id="pdf-page-indicator" style="font-size: 0.78rem; color: var(--neon-teal); font-weight: bold; padding: 0 0.25rem;">Page 0 of 0</span>
+                        <button class="chip-btn" onclick="navigatePDFPage(1)" style="padding: 0.3rem 0.65rem; font-weight: bold;">Next ▶</button>
+                    </div>
+                </div>
+                <div class="pdf-viewport" id="pdf-viewport">
+                    <div class="pdf-page-card">
+                        <div id="pdf-page-content">
+                            <div style="text-align: center; color: var(--text-muted); padding: 2rem 1rem;">
+                                <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">📖</span>
+                                <strong style="color: #fff; font-size: 1rem; display: block; margin-bottom: 0.5rem;">Document Reader Offline</strong>
+                                No document is active. Please upload a PDF or CSV in the Left Panel and click its card to display content here.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: Grounded Chat, Brief Reports & Telemetry Analytics -->
+        <div class="panel" id="insights-panel">
+            <div class="tabs-header">
+                <button class="tab-btn active" onclick="switchTab('chat')">💬 Chat</button>
+                <button class="tab-btn" onclick="switchTab('briefs')">Reports</button>
+                <button class="tab-btn" onclick="switchTab('charts')">Analytics</button>
+            </div>
+            
+            <!-- Tab Contents: Grounded Q&A -->
+            <div class="tab-content active" id="tab-chat">
+                <div class="chat-container" id="chat-container-view">
+                    <div class="messages-display" id="chat-display">
+                        <div class="message ai" id="welcome-message">
+                            Welcome, Coach. Select active context resources on the left to ground the generation engine. Upload strategy spreadsheets or manuals to start exploring!
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Suggestion Chips -->
+                    <div class="chips-container">
+                        <button class="chip-btn" onclick="applyChip('Summarize critical rule changes in active sources')">📋 Summarize rule changes</button>
+                        <button class="chip-btn" onclick="applyChip('Compare metrics and historical team scores')">📊 Compare team scores</button>
+                        <button class="chip-btn" onclick="applyChip('Generate the pit inspection prep checklist')">🛠️ Generate prep checklist</button>
+                    </div>
+
+                    <!-- Chat Input Row -->
+                    <form class="chat-input-area" id="chat-form" onsubmit="handleChatSubmit(event)">
+                        <input type="text" id="chat-input" placeholder="Query active sources or ask strategy questions..." autocomplete="off">
+                        <button type="submit" class="send-btn">Send</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tab Contents: Briefs -->
+            <div class="tab-content" id="tab-briefs">
+                <div class="brief-card">
+                    <h3>Rule Changes Report <span class="brief-badge">Rulebook</span></h3>
+                    <p>Isolates zone boundaries, field obstacles, bumper tolerances, and autonomous phase timing penalties.</p>
+                    <button class="generate-btn" onclick="generateBrief('rules', this)">Synthesize Brief</button>
+                    <div class="generated-report" id="report-rules"></div>
+                </div>
+
+                <div class="brief-card">
+                    <h3>Scoring Trends Report <span class="brief-badge">CSV Data</span></h3>
+                    <p>Parses telemetry across regional brackets. Identifies highest-scoring autonomous routines and average endgame cycles.</p>
+                    <button class="generate-btn" onclick="generateBrief('trends', this)">Synthesize Brief</button>
+                    <div class="generated-report" id="report-trends"></div>
+                </div>
+
+                <div class="brief-card">
+                    <h3>Team Prep Checklist <span class="brief-badge">AI Logic</span></h3>
+                    <p>Synthesizes structural and software requirements to build an actionable checklist for the pit inspection team.</p>
+                    <button class="generate-btn" onclick="generateBrief('checklist', this)">Synthesize Brief</button>
+                    <div class="generated-report" id="report-checklist"></div>
+                </div>
+            </div>
+
+            <!-- Tab Contents: Charts -->
+            <div class="tab-content" id="tab-charts">
+                <div class="chart-wrapper">
+                    <h4>Top Subsystems Matrix (Avg Score)</h4>
+                    <canvas id="barChart" height="180"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <h4>Qualification Progress Velocity</h4>
+                    <canvas id="lineChart" height="180"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Engine Intelligence and Logic Layer -->
+    <script>
+        // Core Reactive State
+        let sources = [];
+        let activeViewerSourceId = null;
+        let activeViewerPage = 1;
+
+        const fileInput = document.getElementById('file-input');
+        const sourcesContainer = document.getElementById('sources-list-container');
+        const emptySourcesMsg = document.getElementById('empty-sources-msg');
+        const sourceCount = document.getElementById('source-count');
+        const chatDisplay = document.getElementById('chat-display');
+        const chatInput = document.getElementById('chat-input');
+        const toastContainer = document.getElementById('toast-container');
+
+        // High Fidelity Simulated PDF Content Database built on demand when uploads are finalized
+        const pdfContentDb = {};
+
+        // Seed initial empty elements
+        window.addEventListener('DOMContentLoaded', () => {
+            renderSources();
+            initializeCharts();
+        });
+
+        // File upload listener
+        fileInput.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if(files.length === 0) return;
+
+            for(let i=0; i<files.length; i++) {
+                const file = files[i];
+                const type = file.name.split('.').pop().toLowerCase();
+                const abstractSummary = `Coaching asset containing structural performance configurations or gameplay parameters (${(file.size/1024).toFixed(1)} KB).`;
+                const newId = `src-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+                addSourceToArray(file.name, type, abstractSummary, newId);
+                
+                // Dynamically construct simulated pages based on document profiles
+                if (type === 'pdf') {
+                    pdfContentDb[newId] = {
+                        maxPages: 12,
+                        pages: {
+                            1: {
+                                title: `Overview: ${file.name}`,
+                                body: `<p><strong>File Type: PDF Manual</strong></p>
+                                       <p>The RoboInsights engine has parsed the rules outline. Key topics highlighted are structural clearance rules, expansion perimeters, and field safety margins.</p>
+                                       <mark class="pdf-highlight">Under Section 6.4, any structural frame expansion into the opponent's loading sector triggers a severe penalty</mark> that is calculated immediately at node completion.`
+                            },
+                            2: {
+                                title: `Clearance Guidelines (Section 4)`,
+                                body: `<p>Detailed mechanical safety inspect bounds are recorded here.</p>
+                                       <mark class="pdf-highlight">The 2026 guidelines introduce stricter bumper ground clearance guidelines (now exactly 1.5 inches min)</mark> above the floor plane. All robots must abide by clearance rules to enter qualification bouts.`
+                            }
+                        }
+                    };
+                } else {
+                    pdfContentDb[newId] = {
+                        maxPages: 2,
+                        pages: {
+                            1: {
+                                title: `Dataset Matrix: ${file.name}`,
+                                body: `<p><strong>File Type: Telemetry Database / CSV</strong></p>
+                                       <p>Extracted numerical arrays tracking autonomous performance indicators:</p>
+                                       <mark class="pdf-highlight">According to active telemetry source, Team 254 shows an upper-node autonomous cycle efficiency of 89% with consistent 4.2m/s drive velocities</mark> across qualification segments.`
+                            }
+                        }
+                    };
+                }
+
+                showToast(`Loaded: ${file.name}`);
+                
+                // If this is the first source loaded, let's load it automatically into the viewer
+                if (sources.length === 1) {
+                    activeViewerSourceId = newId;
+                    activeViewerPage = 1;
+                }
+            }
+            renderSources();
+            fileInput.value = ''; // Reset input element
+        });
+
+        function addSourceToArray(name, type, summary, explicitId = null) {
+            const id = explicitId || `src-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+            sources.push({ id, name, type, summary, checked: true });
+        }
+
+        function renderSources() {
+            if (sources.length === 0) {
+                emptySourcesMsg.style.display = 'block';
+                sourceCount.innerText = '0 Loaded';
+                return;
+            }
+            emptySourcesMsg.style.display = 'none';
+            sourceCount.innerText = `${sources.length} Loaded`;
+
+            // Clear old non-empty-state elements
+            const legacyCards = sourcesContainer.querySelectorAll('.source-card');
+            legacyCards.forEach(card => card.remove());
+
+            sources.forEach(src => {
+                const card = document.createElement('div');
+                card.className = 'source-card';
+                card.id = src.id;
+                
+                const icon = src.type === 'pdf' ? '📄' : '📊';
+                const classModifier = src.type === 'csv' ? 'csv' : '';
+
+                card.innerHTML = `
+                    <div class="source-icon ${classModifier}">${icon}</div>
+                    <div class="source-info" onclick="loadPDFIntoViewer('${src.id}', 1)">
+                        <h4>${src.name}</h4>
+                        <p>${src.summary}</p>
+                    </div>
+                    <div>
+                        <input type="checkbox" ${src.checked ? 'checked' : ''} onclick="toggleSourceCheck('${src.id}'); event.stopPropagation();" title="Include/exclude from grounding AI context">
+                    </div>
+                `;
+                sourcesContainer.appendChild(card);
+            });
+        }
+
+        function toggleSourceCheck(id) {
+            const src = sources.find(s => s.id === id);
+            if(src) {
+                src.checked = !src.checked;
+                showToast(`${src.checked ? 'Enabled' : 'Disabled'} context grounding for ${src.name}`);
+            }
+        }
+
+        // Load targeted PDF page into Simulated Viewer
+        function loadPDFIntoViewer(sourceId, pageNum = 1) {
+            activeViewerSourceId = sourceId;
+            activeViewerPage = pageNum;
+            renderPDFViewport();
+        }
+
+        // Build viewer display parameters dynamically based on selected index configurations
+        function renderPDFViewport() {
+            if (!activeViewerSourceId) return;
+            const currentSrc = sources.find(s => s.id === activeViewerSourceId);
+            if(!currentSrc) return;
+
+            const pdfTitleEl = document.getElementById('pdf-viewer-title');
+            const pdfMetaEl = document.getElementById('pdf-viewer-meta');
+            const pdfPageIndicator = document.getElementById('pdf-page-indicator');
+            const pdfPageContent = document.getElementById('pdf-page-content');
+            const pdfHeaderIcon = document.getElementById('pdf-header-icon');
+
+            pdfTitleEl.innerText = currentSrc.name;
+            pdfHeaderIcon.innerText = currentSrc.type === 'pdf' ? '📄' : '📊';
+            pdfMetaEl.innerText = currentSrc.type === 'pdf' ? 'Ground-truth PDF Manual' : 'Extracted Telemetry Source';
+
+            // Check if pages exist in DB
+            const docDb = pdfContentDb[activeViewerSourceId];
+            if (docDb) {
+                const maxPages = docDb.maxPages || 1;
+                // Clamp active page
+                if (activeViewerPage > maxPages) activeViewerPage = maxPages;
+                if (activeViewerPage < 1) activeViewerPage = 1;
+
+                pdfPageIndicator.innerText = `Page ${activeViewerPage} of ${maxPages}`;
+
+                const pageData = docDb.pages[activeViewerPage];
+                if (pageData) {
+                    pdfPageContent.innerHTML = `
+                        <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--neon-blue); margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">${pageData.title}</h2>
+                        <p style="white-space: pre-line; line-height: 1.8; color: #cbd5e1;">${pageData.body}</p>
+                    `;
+                } else {
+                    pdfPageContent.innerHTML = `
+                        <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--text-muted); margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">Page ${activeViewerPage}</h2>
+                        <p style="color: var(--text-muted); font-style: italic;">Secondary documentation parameters index. No highlighted Q&A citations detected on this page matrix.</p>
+                        <p style="margin-top: 1rem;">Use standard index keys or switch back to ground-truth zones to query references.</p>
+                    `;
+                }
+            } else {
+                pdfPageIndicator.innerText = `Page 1 of 1`;
+                pdfPageContent.innerHTML = `
+                    <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--neon-teal); margin-bottom: 1.5rem;">${currentSrc.name}</h2>
+                    <p style="color: #cbd5e1;">Context parameters mapped inside workspace directory. Source is currently active and fully ground-indexed for AI retrieval.</p>
+                    <p style="margin-top: 1.5rem; color: var(--text-muted); font-size: 0.8rem;">[Checksum metadata verification complete]</p>
+                `;
+            }
+        }
+
+        function navigatePDFPage(direction) {
+            if (!activeViewerSourceId) return;
+            const docDb = pdfContentDb[activeViewerSourceId];
+            const max = docDb ? docDb.maxPages : 1;
+            let targetPage = activeViewerPage + direction;
+            if (targetPage >= 1 && targetPage <= max) {
+                activeViewerPage = targetPage;
+                renderPDFViewport();
+            }
+        }
+
+        // Highlight a target source card & auto-load that page in center viewport
+        function highlightSourceCard(sourceId, pageNum = 1) {
+            const el = document.getElementById(sourceId);
+            if(el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                el.classList.add('highlighted');
+                showToast("Opening source inside Document Viewer... 🔍");
+                setTimeout(() => {
+                    el.classList.remove('highlighted');
+                }, 2500);
+            }
+            // Load and render inside the viewer module
+            loadPDFIntoViewer(sourceId, pageNum);
+        }
+
+        // UI Tabs Handler
+        function switchTab(tabName) {
+            document.querySelectorAll('#insights-panel .tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('#insights-panel .tab-content').forEach(content => content.classList.remove('active'));
+            
+            const clickedBtn = event.currentTarget;
+            clickedBtn.classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+
+        // Apply pre-built chip prompt suggestions
+        function applyChip(text) {
+            // Force the "Chat" tab to become active if user clicks a suggestion chip from other tabs
+            const chatTabBtn = document.querySelector('[onclick="switchTab(\'chat\')"]');
+            if (chatTabBtn && !chatTabBtn.classList.contains('active')) {
+                chatTabBtn.click();
+            }
+            chatInput.value = text;
+            chatInput.focus();
+        }
+
+        // Custom Toast replacement for alert()
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `✨ <span>${message}</span>`;
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Interactive Processing Engine Simulation
+        function handleChatSubmit(e) {
+            e.preventDefault();
+            const queryText = chatInput.value.trim();
+            if(!queryText) return;
+
+            // Render User Prompt
+            appendMessage(queryText, 'user');
+            chatInput.value = '';
+
+            // Generate AI Loading state bubble
+            const loadingId = appendMessage('<span class="mono" style="color: var(--neon-teal)">Thinking... Parsing files...</span>', 'ai');
+
+            setTimeout(() => {
+                const checkedSources = sources.filter(s => s.checked);
+                const loadingBubble = document.getElementById(loadingId);
+                
+                if(checkedSources.length === 0) {
+                    loadingBubble.innerHTML = "⚠️ <strong>System Warning:</strong> No active sources are checked in the left panel. Please upload or check a document to ground my analysis context.";
+                    return;
+                }
+
+                const primarySource = checkedSources[0];
+                const alternateSource = checkedSources[1] || checkedSources[0];
+
+                let aiResponse = "";
+                
+                if (queryText.includes('rule changes')) {
+                    aiResponse = `Analyzing active context in <span class="citation" onclick="highlightSourceCard('${primarySource.id}', 2)">${primarySource.name}, p.2</span>. The current draft guidelines introduce stricter bumper ground clearance guidelines (now exactly 1.5 inches min). Under <span class="citation" onclick="highlightSourceCard('${primarySource.id}', 1)">${primarySource.name}, p.1</span>, any structural frame expansion into the opponent's loading sector triggers a severe penalty.`;
+                } else if (queryText.includes('metrics') || queryText.includes('scores')) {
+                    aiResponse = `According to active telemetry source <span class="citation" onclick="highlightSourceCard('${alternateSource.id}', 1)">${alternateSource.name}</span>, Team 254 shows an upper-node autonomous cycle efficiency of 89% with consistent 4.2m/s drive velocities.`;
+                } else if (queryText.includes('checklist')) {
+                    aiResponse = `Synthesizing safety checklist matching regulatory rules in <span class="citation" onclick="highlightSourceCard('${primarySource.id}', 2)">${primarySource.name}, p.2</span>:<br>
+                    • Confirm primary weight configuration is strictly within team compliance limits.<br>
+                    • Validate CAN Bus link rates and check physical bumper alignment metrics.`;
+                } else {
+                    aiResponse = `I've researched your query against <span class="citation" onclick="highlightSourceCard('${primarySource.id}', 1)">${primarySource.name}, p.1</span>. The documentation suggests structuring the robot's autonomous routine around an active feedback-loop system to minimize alignment variance and maximize scoring potential.`;
+                }
+
+                loadingBubble.innerHTML = aiResponse;
+            }, 900);
+        }
+
+        function appendMessage(text, sender) {
+            const msgNode = document.createElement('div');
+            const uniqueId = `msg-${Date.now()}`;
+            msgNode.className = `message ${sender}`;
+            msgNode.id = uniqueId;
+            msgNode.innerHTML = text;
+            chatDisplay.appendChild(msgNode);
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+            return uniqueId;
+        }
+
+        // Intelligent Report Generators
+        function generateBrief(type, buttonEl) {
+            const reportDisplay = document.getElementById(`report-${type}`);
+            const originalText = buttonEl.innerText;
+            buttonEl.innerText = "Processing Telemetry...";
+            buttonEl.disabled = true;
+
+            setTimeout(() => {
+                buttonEl.innerText = "Synthesize Brief";
+                buttonEl.disabled = false;
+                reportDisplay.style.display = "block";
+
+                const checkedNames = sources.filter(s => s.checked).map(s => s.name);
+                if (checkedNames.length === 0) {
+                    reportDisplay.innerHTML = "❌ <strong>Error:</strong> Generation stopped. Verify at least one grounding file is checked in the active workspace.";
+                    return;
+                }
+
+                const sourceTitle = checkedNames[0];
+                const backupTitle = checkedNames[1] || checkedNames[0];
+
+                if (type === 'rules') {
+                    reportDisplay.innerHTML = `<strong>[Grounded Context: ${sourceTitle}]</strong>\n• Autonomous boundary lines are strictly protected by newly revised sensor arrays.\n• Teams attempting endgame loading interactions face structural penalties.\n• Clearance Guidelines: Maintain physical bumper elements above 1.5 inches globally.`;
+                } else if (type === 'trends') {
+                    reportDisplay.innerHTML = `<strong>[Grounded Context: ${backupTitle}]</strong>\n• Dynamic telemetry shows peak efficiency cycles are reached during early autonomous routines.\n• Optimize elevator node control trajectories to offset minor driver adjustments.`;
+                } else if (type === 'checklist') {
+                    reportDisplay.innerHTML = `<strong>[Grounded Action Strategy]</strong>\n1. Run double telemetry hardware diagnostics before qualifying rounds.\n2. Verify the structural integrity of the chassis bumpers.\n3. Validate the primary battery voltage profiles under full-load tests.`;
+                }
+                
+                showToast("Brief report successfully generated!");
+            }, 1100);
+        }
+
+        // Live Dynamic Data Visualization (Chart.js implementation)
+        function initializeCharts() {
+            // Bar Chart Config
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: ['Team 254', 'Team 118', 'Team 1678', 'Team 1323', 'Team 971'],
+                    datasets: [{
+                        label: 'Autonomous Scores',
+                        data: [48, 38, 44, 46, 32],
+                        backgroundColor: '#00d2ff',
+                        borderColor: '#00d2ff',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }, {
+                        label: 'Teleop Cycle Scores',
+                        data: [84, 80, 89, 72, 92],
+                        backgroundColor: '#00f5d4',
+                        borderColor: '#00f5d4',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { 
+                            grid: { color: '#1f2d5a' }, 
+                            ticks: { color: '#94a3b8', font: { family: 'monospace', size: 9 } } 
+                        },
+                        y: { 
+                            grid: { color: '#1f2d5a' }, 
+                            ticks: { color: '#94a3b8', font: { family: 'monospace', size: 9 } } 
+                        }
+                    },
+                    plugins: {
+                        legend: { 
+                            labels: { color: '#f1f5f9', font: { size: 10 } } 
+                        }
+                    }
+                }
+            });
+
+            // Line Chart Config
+            const ctxLine = document.getElementById('lineChart').getContext('2d');
+            new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: ['Round 1', 'Round 2', 'Round 3', 'Round 4', 'Round 5'],
+                    datasets: [{
+                        label: 'Average Score Progress',
+                        data: [92, 105, 112, 126, 138],
+                        borderColor: '#00f5d4',
+                        backgroundColor: 'rgba(0, 245, 212, 0.1)',
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: '#00d2ff',
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { 
+                            grid: { color: '#1f2d5a' }, 
+                            ticks: { color: '#94a3b8', font: { family: 'monospace', size: 9 } } 
+                        },
+                        y: { 
+                            grid: { color: '#1f2d5a' }, 
+                            ticks: { color: '#94a3b8', font: { family: 'monospace', size: 9 } } 
+                        }
+                    },
+                    plugins: {
+                        legend: { 
+                            labels: { color: '#f1f5f9', font: { size: 10 } } 
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
